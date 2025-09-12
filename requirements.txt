@@ -1,0 +1,14 @@
+praw>=7.6.0,<8.0.0
+# Optional extras you may add later:
+# fuzzywuzzy[speedup]  # for fuzzy matching (requires python-Levenshtein)
+# python-Levenshtein
+vaderSentiment
+wordcloud
+pandas
+scikit-learn
+scipy
+joblib
+tqdm
+nltk
+matplotlib
+seaborn
