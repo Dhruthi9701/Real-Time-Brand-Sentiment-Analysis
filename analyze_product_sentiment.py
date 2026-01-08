@@ -11,13 +11,10 @@ MODEL_DIR = './models'
 OUT_DIR = './analysis'
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# --- Efficient unified preprocessing ---
-# Load data & model
 X = sparse.load_npz(os.path.join(FEATURE_DIR, 'X_all.npz'))
 meta = pd.read_csv(os.path.join(FEATURE_DIR, 'meta.csv'))
 clf = joblib.load(os.path.join(MODEL_DIR, 'sentiment_linsvc.joblib'))
 
-# Predict sentiment and compute VADER only once
 if 'pred_sentiment' not in meta.columns:
     print('[DEBUG] Predicting sentiment for all rows...')
     vader_compound = meta['text_clean'].fillna('').astype(str).apply(lambda t: vader_scores(t)['compound'])
@@ -28,14 +25,12 @@ if 'pred_sentiment' not in meta.columns:
     y_pred = clf.predict(X_full)
     meta['pred_sentiment'] = y_pred
 else:
-    # If already present, just stack VADER for downstream use
     vader_compound = meta['text_clean'].fillna('').astype(str).apply(lambda t: vader_scores(t)['compound'])
     vader_compound = vader_compound.fillna(0.0).values.reshape(-1,1)
     vader_sparse = sparse.csr_matrix(vader_compound)
     X_full = sparse.hstack([X, vader_sparse], format='csr')
 
 
-# Only summarize by brand 
 print('[DEBUG] Creating brand-level sentiment summary...')
 brands = ['Hermes', 'Gucci', 'Chanel']
 brand_summary = meta[meta['brand'].isin(brands)].groupby('brand')['pred_sentiment'].value_counts().unstack(fill_value=0).reset_index()
@@ -50,7 +45,6 @@ brand_summary = brand_summary.sort_values(['brand'])
 brand_summary.to_csv(os.path.join(OUT_DIR, 'product_sentiment_summary.csv'), index=False)
 print("Saved product sentiment summary (brand-level) ->", os.path.join(OUT_DIR, 'product_sentiment_summary.csv'))
 
-# Plot time series of mentions for Hermes, Gucci, Chanel from eda_outputs_<brand>/mentions_by_month.csv
 import matplotlib.pyplot as plt
 MODELS_DIR = './models'
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -60,17 +54,14 @@ hermes = pd.read_csv('eda_outputs_hermes/mentions_by_month.csv')
 gucci = pd.read_csv('eda_outputs_gucci/gucci_mentions_by_month.csv')
 chanel = pd.read_csv('eda_outputs_chanel/mentions_by_month.csv')
 
-# Standardize column names
 hermes.columns = ['month', 'hermes']
 gucci.columns = ['month', 'gucci']
 chanel.columns = ['month', 'chanel']
 
-# Merge on month
 df = pd.merge(hermes, gucci, on='month', how='outer')
 df = pd.merge(df, chanel, on='month', how='outer')
 df = df.sort_values('month')
 
-# Plot
 print('[DEBUG] Plotting mentions time series for all brands...')
 plt.figure(figsize=(12,5))
 plt.plot(df['month'], df['hermes'], marker='o', label='Hermes', color='#888888')
@@ -87,13 +78,11 @@ plt.savefig(mentions_plot_path)
 plt.close()
 print(f"[DEBUG] Saved plot -> {mentions_plot_path}")
 
-# Plot positive and negative comment percentages for each brand as bar graphs
 print('[DEBUG] Plotting positive and negative comment percentages for each brand...')
 MODELS_DIR = './models'
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 brands = ['Hermes', 'Gucci', 'Chanel']
-# Calculate brand-level sentiment summary
 group_col = None
 for cand in ('product','brand','source_file'):
     if cand in meta.columns:
@@ -117,10 +106,8 @@ else:
         summary['neg_pct'] = 0
         summary['pos_pct'] = 0
 
-# Only keep rows for Hermes, Gucci, Chanel (case-insensitive match)
 summary_brands = summary.loc[[b for b in summary.index if b.lower() in [x.lower() for x in brands]]]
 
-# Plot negative percentage
 plt.figure(figsize=(7,5))
 plt.bar(summary_brands.index, summary_brands['neg_pct'], color='red')
 plt.ylabel('Percentage of Negative Comments')
@@ -133,7 +120,6 @@ plt.savefig(neg_plot_path)
 plt.close()
 print(f"[DEBUG] Saved plot -> {neg_plot_path}")
 
-# Plot positive percentage
 plt.figure(figsize=(7,5))
 plt.bar(summary_brands.index, summary_brands['pos_pct'], color='green')
 plt.ylabel('Percentage of Positive Comments')
