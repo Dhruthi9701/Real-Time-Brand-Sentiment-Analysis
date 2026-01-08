@@ -1,15 +1,13 @@
-# process_ndjson_and_features.py
 import os, json, re
 import pandas as pd
 from tqdm import tqdm
 
-INPUT_DIR = '.'          # change if NDJSON in another folder
-OUT_DIR = './processed'  # output folder for processed CSVs
-SAMPLE_LIMIT = None      # set to integer to test (e.g., 5000)
+INPUT_DIR = '.'
+OUT_DIR = './processed'
+SAMPLE_LIMIT = None
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# --- feature helpers ---
 def count_exclam(s): return str(s).count('!')
 def count_question(s): return str(s).count('?')
 def count_ellipsis(s): return str(s).count('...')
@@ -25,7 +23,6 @@ def quote_count(s): return int(bool(re.search(r'["“”\']', str(s))))
 def emoji_count(s):
     return len(re.findall(r'[\U0001F300-\U0001F6FF\U0001F900-\U0001F9FF\U0001F1E0-\U0001F1FF]', str(s)))
 
-# weak sarcasm heuristic patterns
 sarcasm_patterns = [
     r'#sarcasm', r'#sarcastic',
     r'\byeah,? right\b', r'\bas if\b',
@@ -46,7 +43,7 @@ def weak_sarcasm_label(text):
 
 def make_clean(text):
     t = str(text)
-    t = re.sub(r'http\S+|www\.\S+', ' ', t)   # remove urls
+    t = re.sub(r'http\S+|www\.\S+', ' ', t)
     t = re.sub(r'\s+', ' ', t).strip()
     return t
 
@@ -54,13 +51,11 @@ def guess_text_col(record):
     for candidate in ('text','body','comment','content','post','title'):
         if candidate in record:
             return candidate
-    # fallback: first string field
     for k,v in record.items():
         if isinstance(v, str):
             return k
     return None
 
-# ---- process files ----
 for fname in os.listdir(INPUT_DIR):
     if not fname.lower().endswith('.ndjson'):
         continue
@@ -95,7 +90,6 @@ for fname in os.listdir(INPUT_DIR):
                 'emoji_count': emoji_count(raw),
             }
             out['weak_sarcasm'] = weak_sarcasm_label(raw)
-            # copy a few common metadata items if present
             for k in ('title','created_utc','subreddit','score'):
                 if k in rec:
                     out[k] = rec[k]
