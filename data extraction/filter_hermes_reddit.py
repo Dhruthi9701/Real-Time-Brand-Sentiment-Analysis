@@ -2,17 +2,13 @@ import os, io, json, re
 from tqdm import tqdm
 import zstandard as zstd
 
-# ---------- CONFIG ----------
-DOWNLOAD_DIR = r"c:\Users\Hp\OneDrive\Desktop\Project\Brand-Sentiment-Analysis\reddit"          # folder with your .zst files
+DOWNLOAD_DIR = r"c:\Users\Hp\OneDrive\Desktop\Project\Brand-Sentiment-Analysis\reddit"
 OUTPUT_FILE = "hermes_hits.ndjson"
 
-# Post 2020 Setptember 7 
 AFTER_UNIX = 1599436800
 
-# If you only want to process some sub files, put their substrings here:
 PROCESS_ONLY = ("handbags", "thehermesgame", "luxury", "femalefashionadvice")
 
-# ---------- KEYWORDS (tiered) ----------
 HERMES_KEYWORDS = {
     "bags": [
         r"\bbirkin\b", r"\bkelly\b", r"\bconstance\b", r"\bevelyne\b",
@@ -55,18 +51,14 @@ HERMES_KEYWORDS = {
     ]
 }
 
-# Compile regex per category
 CATEGORY_RES = {cat: re.compile("|".join(pats), flags=re.IGNORECASE | re.UNICODE)
                 for cat, pats in HERMES_KEYWORDS.items()}
 
-# Exclude tech/crypto/etc.
 EXCLUDE_RE = re.compile(r"\b(protocol|crypto|wallet|graphql|sdk|rust|broker|service)\b",
                         flags=re.IGNORECASE)
 
 
-# ---------- FUNCTIONS ----------
 def extract_text(obj):
-    """Combine title/selftext/body into one string"""
     parts = []
     for k in ("title", "selftext", "body"):
         v = obj.get(k)
@@ -76,7 +68,6 @@ def extract_text(obj):
 
 
 def match_category(text):
-    """Return first matching category for given text"""
     for cat, regex in CATEGORY_RES.items():
         if regex.search(text):
             return cat
@@ -146,4 +137,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
