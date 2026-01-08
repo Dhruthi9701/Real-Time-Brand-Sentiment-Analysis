@@ -2,17 +2,13 @@ import os, io, json, re
 from tqdm import tqdm
 import zstandard as zstd
 
-# ---------- CONFIG ----------
-DOWNLOAD_DIR = r"c:\Users\Hp\OneDrive\Desktop\Project\Brand-Sentiment-Analysis\reddit"       # folder with your .zst files
+DOWNLOAD_DIR = r"c:\Users\Hp\OneDrive\Desktop\Project\Brand-Sentiment-Analysis\reddit"
 OUTPUT_FILE = "chanel_matches.ndjson"
 
-# Post 2020 Setptember 7 
 AFTER_UNIX = 1599436800
 
-# Process only these subs
 PROCESS_ONLY = ("chanel", "handbags", "luxury", "femalefashionadvice", "fragranceswap")
 
-# ---------- KEYWORDS (tiered for Chanel) ----------
 CHANEL_KEYWORDS = {
     "bags": [
         r"\bclassic flap\b", r"\b2\.55\b", r"\bgabrielle\b", r"\bboy bag\b",
@@ -40,15 +36,12 @@ CHANEL_KEYWORDS = {
     ]
 }
 
-# Compile regex per category
 CATEGORY_RES = {cat: re.compile("|".join(pats), flags=re.IGNORECASE | re.UNICODE)
                 for cat, pats in CHANEL_KEYWORDS.items()}
 
-# Exclude noise (finance, crypto, etc.)
 EXCLUDE_RE = re.compile(r"\b(stocks?|crypto|broker|service|perfume dupes?)\b", flags=re.IGNORECASE)
 
 
-# ---------- FUNCTIONS ----------
 def extract_text(obj):
     parts = []
     for k in ("title", "selftext", "body"):
