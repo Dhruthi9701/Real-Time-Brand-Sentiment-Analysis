@@ -1,4 +1,3 @@
-# train_sentiment_svm.py
 import os, joblib, numpy as np, pandas as pd
 from scipy import sparse
 from sklearn.svm import LinearSVC
@@ -32,8 +31,6 @@ print("[INFO] Creating sentiment labels...")
 if 'sentiment' in meta.columns:
     y = meta['sentiment'].astype(str)
 else:
-    # No gold sentiment labels found. Here we suggest a weak rule (only for bootstrapping).
-    # Use VADER compound thresholds to create 3 classes - REMOVE and replace with human labels ASAP.
     vc = vader_compound.ravel()
     y = pd.cut(vc, bins=[-1.1, -0.05, 0.05, 1.1], labels=['neg','neu','pos']).astype(str)
     print("WARNING: using weak VADER-based labels. Replace with human annotated labels for production.")
@@ -41,7 +38,6 @@ else:
 class_dist = pd.Series(y).value_counts()
 print("Class distribution:\n", class_dist)
 
-# Plot class distribution
 plt.figure(figsize=(6,4))
 class_dist.plot(kind='bar', color=['red','gray','green'])
 plt.title('Sentiment Class Distribution')
@@ -63,7 +59,6 @@ preds = cross_val_predict(clf, X, y, cv=cv, method='predict')
 print("[INFO] Classification report:")
 print(classification_report(y, preds, digits=4))
 
-# Confusion matrix plot
 cm = confusion_matrix(y, preds, labels=sorted(class_dist.index))
 plt.figure(figsize=(6,5))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=sorted(class_dist.index), yticklabels=sorted(class_dist.index))
