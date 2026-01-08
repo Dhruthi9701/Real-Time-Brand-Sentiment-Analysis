@@ -1,4 +1,3 @@
-# train_sarcasm_detector.py
 import os, joblib
 import numpy as np
 import pandas as pd
@@ -18,11 +17,10 @@ print("[INFO] Loading feature matrix and metadata...")
 X = sparse.load_npz(os.path.join(FEATURE_DIR, 'X_all.npz'))
 meta = pd.read_csv(os.path.join(FEATURE_DIR, 'meta.csv'))
 print(f"[INFO] Feature matrix shape: {X.shape}, Meta shape: {meta.shape}")
- # If you kept source file ordering consistent, meta aligns with X rows
 
 
 print("[INFO] Creating target labels for sarcasm detection...")
-target_col = 'sarcasm_label'  # if you annotated manually
+target_col = 'sarcasm_label'
 if target_col in meta.columns:
     y = meta[target_col].astype(int)
 else:
@@ -31,7 +29,6 @@ else:
 class_dist = pd.Series(y).value_counts().sort_index()
 print("Class counts:\n", class_dist)
 
-# Plot class distribution
 plt.figure(figsize=(6,4))
 class_dist.plot(kind='bar', color=['gray','red'])
 plt.title('Sarcasm Class Distribution (0=Not Sarcastic, 1=Sarcastic)')
@@ -50,9 +47,8 @@ preds = cross_val_predict(clf, X, y, cv=cv, method='predict')
 print("[INFO] Classification report:")
 print(classification_report(y, preds, digits=4))
 
-# Confusion matrix plot
-cm = confusion_matrix(y, preds, labels=sorted(class_dist.index))
 plt.figure(figsize=(5,4))
+cm = confusion_matrix(y, preds, labels=sorted(class_dist.index))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=sorted(class_dist.index), yticklabels=sorted(class_dist.index))
 plt.title('Sarcasm Confusion Matrix')
 plt.xlabel('Predicted')
