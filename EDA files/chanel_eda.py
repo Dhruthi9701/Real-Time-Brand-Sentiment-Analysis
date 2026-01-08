@@ -1,4 +1,3 @@
-# brand_eda.py
 import os, re
 from collections import Counter
 import pandas as pd
@@ -9,8 +8,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from tqdm import tqdm
 from wordcloud import WordCloud
 
-# ---------- CONFIG ----------
-CSV_FILE = "chanel_cleaned.csv"   # change this for other brands
+CSV_FILE = "chanel_cleaned.csv"
 OUTPUT_DIR = "E:\Brand sentiment analysis\Brand-Sentiment-Analysis\eda_outputs_chanel"
 MIN_WORD_DF = 5
 MIN_BIGRAM_DF = 3
@@ -18,18 +16,16 @@ TOP_N = 30
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ---------- helpers ----------
 def clean_text(s):
     if not isinstance(s, str):
         return ""
-    s = re.sub(r"http\S+", " ", s)            # URLs
-    s = re.sub(r"u\/\w+", " ", s)             # usernames
-    s = re.sub(r"r\/\w+", " ", s)             # subreddit refs
-    s = re.sub(r"[^A-Za-z0-9\s']", " ", s)    # punctuation
+    s = re.sub(r"http\S+", " ", s)
+    s = re.sub(r"u\/\w+", " ", s)
+    s = re.sub(r"r\/\w+", " ", s)
+    s = re.sub(r"[^A-Za-z0-9\s']", " ", s)
     s = re.sub(r"\s+", " ", s).strip().lower()
     return s
 
-# stopwords
 try:
     import nltk
     nltk.data.find("corpora/stopwords")
@@ -38,12 +34,10 @@ try:
 except Exception:
     STOPWORDS = set(ENGLISH_STOP_WORDS)
 
-# ---------- load ----------
 print("Loading CSV:", CSV_FILE)
 df = pd.read_csv(CSV_FILE)
 print("Rows loaded:", len(df))
 
-# ensure created_utc → datetime
 if "created_utc" in df.columns:
     df["created_utc"] = pd.to_numeric(df["created_utc"], errors="coerce")
     df["date"] = pd.to_datetime(df["created_utc"], unit="s", errors="coerce")
@@ -51,25 +45,20 @@ if "created_utc" in df.columns:
 else:
     raise ValueError("❌ created_utc column missing from CSV")
 
-# ensure score is numeric
 df["score"] = pd.to_numeric(df.get("score", 0), errors="coerce").fillna(0).astype(int)
 
-# drop empty texts
 df["text"] = df["text"].astype(str)
 df = df[df["text"].str.strip() != ""]
 
-# derived fields
 df["year"] = df["date"].dt.year
 df["month"] = df["date"].dt.to_period("M")
 
 print("Prepared DataFrame with columns:", df.columns.tolist())
 
-# ---------- BASIC COUNTS ----------
 print("\n=== BASIC COUNTS ===")
 print("Total mentions:", len(df))
 print("Unique subreddits:", df["subreddit"].nunique())
 
-# mentions by month
 ts = df.groupby("month").size().sort_index()
 ts.to_csv(os.path.join(OUTPUT_DIR, "mentions_by_month.csv"))
 
@@ -81,18 +70,15 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, "mentions_by_month.png"))
 plt.close()
 
-# ---------- TEXT ANALYSIS ----------
 print("\n=== TEXT ANALYSIS ===")
 df["clean_text"] = df["text"].apply(clean_text)
 
-# words
 vec = CountVectorizer(stop_words=list(STOPWORDS), min_df=MIN_WORD_DF, token_pattern=r"(?u)\b\w+\b")
 X = vec.fit_transform(df["clean_text"])
 word_freq = dict(zip(vec.get_feature_names_out(), X.sum(axis=0).A1))
 top_words = Counter(word_freq).most_common(TOP_N)
 pd.DataFrame(top_words, columns=["word","count"]).to_csv(os.path.join(OUTPUT_DIR,"top_words.csv"), index=False)
 
-# word bar chart
 words, counts = zip(*top_words)
 plt.figure(figsize=(8,6))
 plt.barh(words[::-1], counts[::-1])
@@ -101,7 +87,6 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR,"top_words.png"))
 plt.close()
 
-# word cloud
 wc = WordCloud(width=900, height=500, background_color="white").generate_from_frequencies(word_freq)
 plt.figure(figsize=(10,6))
 plt.imshow(wc, interpolation="bilinear")
@@ -110,14 +95,12 @@ plt.title("Word Cloud - Top Words")
 plt.savefig(os.path.join(OUTPUT_DIR,"wordcloud_words.png"))
 plt.close()
 
-# bigrams
 vec2 = CountVectorizer(stop_words=list(STOPWORDS), ngram_range=(2,2), min_df=MIN_BIGRAM_DF)
 X2 = vec2.fit_transform(df["clean_text"])
 bigram_freq = dict(zip(vec2.get_feature_names_out(), X2.sum(axis=0).A1))
 top_bigrams = Counter(bigram_freq).most_common(TOP_N)
 pd.DataFrame(top_bigrams, columns=["bigram","count"]).to_csv(os.path.join(OUTPUT_DIR,"top_bigrams.csv"), index=False)
 
-# bigram bar chart
 bigrams, bcounts = zip(*top_bigrams)
 plt.figure(figsize=(8,6))
 plt.barh(bigrams[::-1], bcounts[::-1])
@@ -126,7 +109,6 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR,"top_bigrams.png"))
 plt.close()
 
-# bigram word cloud
 wc2 = WordCloud(width=1000, height=600, background_color="white").generate_from_frequencies(bigram_freq)
 plt.figure(figsize=(10,6))
 plt.imshow(wc2, interpolation="bilinear")
@@ -135,7 +117,6 @@ plt.title("Word Cloud - Top Bigrams")
 plt.savefig(os.path.join(OUTPUT_DIR,"wordcloud_bigrams.png"))
 plt.close()
 
-# ---------- SENTIMENT ----------
 print("\n=== SENTIMENT ===")
 analyzer = SentimentIntensityAnalyzer()
 tqdm.pandas()
@@ -166,12 +147,10 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, "sentiment_distribution.png"))
 plt.close()
 
-# ---------- CATEGORY ANALYSIS ----------
 if "category" in df.columns:
     cat_sent = df.groupby(["category","sentiment_label"]).size().unstack(fill_value=0)
     cat_sent.to_csv(os.path.join(OUTPUT_DIR,"category_sentiment.csv"))
 
-    # stacked bar chart
     cat_sent.plot(kind="bar", stacked=True, figsize=(8,6), color={"positive":"green","negative":"red","neutral":"gray"})
     plt.title("Sentiment by Category")
     plt.ylabel("Count")
@@ -180,5 +159,3 @@ if "category" in df.columns:
     plt.close()
 
 print("\n✅ ALL DONE. Outputs saved to:", OUTPUT_DIR)
-
-
